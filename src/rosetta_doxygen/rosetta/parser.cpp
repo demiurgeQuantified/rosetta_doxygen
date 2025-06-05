@@ -17,7 +17,9 @@ namespace {
         if (yaml["return"]) {
             // we ignore multiple returns because they won't parse as c++
             // type unions are also going to be an issue... TODO what can be done about this?
-            function.return_.type = yaml["return"][0]["type"].as<std::string>();
+            YAML::Node yamlReturn = yaml["return"][0];
+            function.return_.type = yamlReturn["type"].as<std::string>();
+            function.return_.name = yamlReturn["name"] ? yamlReturn["name"].as<std::string>() : "";
         } else {
             function.return_.type = "nil";
         }

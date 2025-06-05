@@ -36,7 +36,14 @@ std::string converter::to_c_source(const function &function) {
     if (return_ == "nil") {
         return_ = "void";
     } else {
-        if (!function.return_.notes.empty()) {
+        if (!function.return_.name.empty()) {
+            std::string line = "@retval " + function.return_.name;
+            if (!function.return_.notes.empty()) {
+                line += " " + function.return_.notes;
+            }
+            docstring.add_line(line);
+        }
+        else if (!function.return_.notes.empty()) {
             docstring.add_line("@return " + function.return_.notes);
         }
     }

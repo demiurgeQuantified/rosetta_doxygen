@@ -21,6 +21,8 @@ namespace rosetta_doxygen::rosetta::lua {
         struct return_ {
             /// String name of the return type of the function.
             std::string type;
+            /// Name of the return.
+            std::string name;
             /// Additional documentation of the return value.
             std::string notes;
         };
