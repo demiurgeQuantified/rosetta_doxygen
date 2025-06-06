@@ -2,6 +2,7 @@
 #include <filesystem>
 
 #include "rosetta_doxygen/converter.h"
+#include "rosetta_doxygen/docstring_builder.h"
 #include "rosetta_doxygen/rosetta/parser.h"
 #include "rosetta_doxygen/rosetta/lua/types.h"
 
@@ -85,6 +86,11 @@ int main(int argc, char *argv[]) {
     // std::cout << rosetta_doxygen::converter::to_c_source(testClass);
 
     lua::environment environment = parser::parse_yaml(inputPath);
+
+    // the file needs an @file tag for global functions to be documented
+    docstring_builder docstring;
+    docstring.add_line("@file");
+    std::cout << docstring.get() << "\n\n";
 
     std::cout << converter::to_c_source(environment.classes);
     for (const lua::function &function: environment.functions) {

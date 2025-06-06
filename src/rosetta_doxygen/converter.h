@@ -10,6 +10,16 @@ namespace rosetta_doxygen::converter {
     /**
      * Represents a Lua function as C++ source code.
      * @param function The function to represent.
+     * @param static_ Whether to render the function as static.
+     * @return C++ source code representing the function.
+     */
+    [[nodiscard]] std::string to_c_source(
+        const rosetta::lua::function &function,
+        bool static_);
+
+    /**
+     * Represents a Lua function as C++ source code.
+     * @param function The function to represent.
      * @return C++ source code representing the function.
      */
     [[nodiscard]] std::string to_c_source(const rosetta::lua::function &function);

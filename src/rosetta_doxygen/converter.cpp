@@ -19,7 +19,7 @@ namespace {
 }
 
 
-std::string converter::to_c_source(const function &function) {
+std::string converter::to_c_source(const function &function, const bool static_) {
     std::string result;
 
     docstring_builder docstring;
@@ -27,7 +27,6 @@ std::string converter::to_c_source(const function &function) {
         docstring.add_line(function.notes);
     }
 
-    const bool static_ = function.parameters.empty() or function.parameters[0].name != "self";
     if (static_) {
         result += "static ";
     }
@@ -72,6 +71,11 @@ std::string converter::to_c_source(const function &function) {
     }
 
     return result += ");";
+}
+
+
+std::string converter::to_c_source(const function &function) {
+    return to_c_source(function, false);
 }
 
 
@@ -135,7 +139,9 @@ std::string converter::to_c_source(const class_ &class_) {
         if (function.name == "new" and function.return_.type == class_.name) {
             result += constructor_to_c_source(class_, function) + "\n";
         } else {
-            result += to_c_source(function) + "\n";
+            result += to_c_source(
+                function,
+                function.parameters.empty() or function.parameters[0].name != "self") + "\n";
         }
     }
 
