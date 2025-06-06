@@ -38,115 +38,120 @@ namespace {
     }
 }
 
-std::vector<lua::class_> parser::parse_yaml(std::filesystem::path filePath) {
+lua::environment parser::parse_yaml(std::filesystem::path filePath) {
     assert(std::filesystem::exists(filePath) and std::filesystem::is_regular_file(filePath));
     std::fstream stream {filePath, std::fstream::in};
 
+    lua::environment environment;
+
     YAML::Node rosettaFile = YAML::Load(stream);
     if (!rosettaFile["version"] or rosettaFile["version"].as<std::string>() != "1.1") {
-        return {};
+        return environment;
     }
 
-    if (!rosettaFile["languages"]
-        or !rosettaFile["languages"]["lua"]
-        or !rosettaFile["languages"]["lua"]["classes"])
+    if (!rosettaFile["languages"] or !rosettaFile["languages"]["lua"])
     {
-        return {};
+        return environment;
     }
 
-    YAML::Node classesNode = rosettaFile["languages"]["lua"]["classes"];
+    YAML::Node luaNode = rosettaFile["languages"]["lua"];
 
-    std::vector<lua::class_> classes;
-    classes.reserve(classesNode.size());
+    if (YAML::Node classesNode = luaNode["classes"]) {
+        environment.classes.reserve(classesNode.size());
 
-    for (YAML::const_iterator it=classesNode.begin(); it != classesNode.end(); ++it) {
-        lua::class_ class_ = {
-            it->first.as<std::string>()
-        };
+        for (YAML::const_iterator it=classesNode.begin(); it != classesNode.end(); ++it) {
+            lua::class_ class_ = {
+                it->first.as<std::string>()
+            };
 
-        if (it->second["extends"]) {
-            class_.supers = {it->second["extends"].as<std::string>()};
-        }
+            if (it->second["extends"]) {
+                class_.supers = {it->second["extends"].as<std::string>()};
+            }
 
-        YAML::Node methods = it->second["methods"];
-        if (methods) {
-            for (auto &&method : methods) {
-                lua::function function = parse_function(static_cast<YAML::Node>(method));
+            if (YAML::Node methods = it->second["methods"]) {
+                for (auto &&method : methods) {
+                    lua::function function = parse_function(static_cast<YAML::Node>(method));
 
-                // add self to front of parameter list
-                std::vector<lua::function::parameter> parameters;
-                parameters.push_back(
-                    {
-                        "self",
-                        class_.name
+                    // add self to front of parameter list
+                    std::vector<lua::function::parameter> parameters;
+                    parameters.push_back(
+                        {
+                            "self",
+                            class_.name
+                        }
+                    );
+                    for (const lua::function::parameter &parameter : function.parameters) {
+                        parameters.push_back(parameter);
                     }
-                );
-                for (const lua::function::parameter &parameter : function.parameters) {
-                    parameters.push_back(parameter);
+                    function.parameters = parameters;
+
+                    class_.functions.push_back(function);
                 }
-                function.parameters = parameters;
-
-                class_.functions.push_back(function);
             }
-        }
 
-        YAML::Node staticMethods = it->second["staticMethods"];
-        if (staticMethods) {
-            for (auto &&method : staticMethods) {
-                class_.functions.push_back(
-                    parse_function(static_cast<YAML::Node>(method)));
-            }
-        }
-
-        YAML::Node constructors = it->second["constructors"];
-        if (constructors) {
-            for (auto &&constructor : constructors) {
-                lua::function function = parse_function(static_cast<YAML::Node>(constructor));
-
-                function.name = "new";
-                function.return_ = {
-                    class_.name
-                };
-
-                class_.functions.push_back(function);
-            }
-        }
-
-        YAML::Node fields = it->second["fields"];
-        if (fields) {
-            for (YAML::const_iterator it=fields.begin(); it != fields.end(); ++it) {
-                // inherited fields don't have a type
-                if (!it->second["type"]) {
-                    continue;
+            if (YAML::Node staticMethods = it->second["staticMethods"]) {
+                for (auto &&method : staticMethods) {
+                    class_.functions.push_back(
+                        parse_function(static_cast<YAML::Node>(method)));
                 }
-                class_.fields.emplace_back(
-                    it->first.as<std::string>(),
-                    it->second["type"].as<std::string>(),
-                    it->second["notes"] ? it->second["notes"].as<std::string>() : "",
-                    false
-                );
             }
-        }
 
-        YAML::Node staticFields = it->second["staticFields"];
-        if (staticFields) {
-            for (YAML::const_iterator it=staticFields.begin(); it != staticFields.end(); ++it) {
-                // inherited fields don't have a type
-                if (!it->second["type"]) {
-                    continue;
+            if (YAML::Node constructors = it->second["constructors"]) {
+                for (auto &&constructor : constructors) {
+                    lua::function function = parse_function(static_cast<YAML::Node>(constructor));
+
+                    function.name = "new";
+                    function.return_ = {
+                        class_.name
+                    };
+
+                    class_.functions.push_back(function);
                 }
-                class_.fields.emplace_back(
-                    it->first.as<std::string>(),
-                    it->second["type"].as<std::string>(),
-                    it->second["notes"] ? it->second["notes"].as<std::string>() : "",
-                    true
-                );
             }
-        }
 
-        classes.push_back(class_);
+            if (YAML::Node fields = it->second["fields"]) {
+                for (YAML::const_iterator it=fields.begin(); it != fields.end(); ++it) {
+                    // inherited fields don't have a type
+                    if (!it->second["type"]) {
+                        continue;
+                    }
+                    class_.fields.emplace_back(
+                        it->first.as<std::string>(),
+                        it->second["type"].as<std::string>(),
+                        it->second["notes"] ? it->second["notes"].as<std::string>() : "",
+                        false
+                    );
+                }
+            }
+
+            if (YAML::Node staticFields = it->second["staticFields"]) {
+                for (YAML::const_iterator it=staticFields.begin(); it != staticFields.end(); ++it) {
+                    // inherited fields don't have a type
+                    if (!it->second["type"]) {
+                        continue;
+                    }
+                    class_.fields.emplace_back(
+                        it->first.as<std::string>(),
+                        it->second["type"].as<std::string>(),
+                        it->second["notes"] ? it->second["notes"].as<std::string>() : "",
+                        true
+                    );
+                }
+            }
+
+            environment.classes.push_back(class_);
+        }
     }
 
-    return classes;
+    if (YAML::Node functionsNode = luaNode["functions"]) {
+        environment.functions.reserve(functionsNode.size());
+
+        for (auto &&function : functionsNode) {
+            environment.functions.push_back(
+                parse_function(static_cast<YAML::Node>(function)));
+        }
+    }
+
+    return environment;
 }
 

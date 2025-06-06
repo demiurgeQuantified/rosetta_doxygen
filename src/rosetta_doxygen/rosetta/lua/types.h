@@ -64,4 +64,9 @@ namespace rosetta_doxygen::rosetta::lua {
         /// List of all functions belonging to this class.
         std::vector<function> functions;
     };
+
+    struct environment {
+        std::vector<class_> classes;
+        std::vector<function> functions;
+    };
 }

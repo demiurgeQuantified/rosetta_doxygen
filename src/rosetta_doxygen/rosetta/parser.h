@@ -7,9 +7,9 @@
 
 namespace rosetta_doxygen::rosetta::parser {
      /**
-     * Parses a YAML file and returns any Lua classes contained within.
+     * Parses a YAML file and returns the Lua objects contained within.
      * @param filePath Path to the file to parse.
      * @return The classes in the file.
      */
-    [[nodiscard]] std::vector<lua::class_> parse_yaml(std::filesystem::path filePath);
+    [[nodiscard]] lua::environment parse_yaml(std::filesystem::path filePath);
 }

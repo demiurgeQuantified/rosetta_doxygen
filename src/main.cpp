@@ -5,6 +5,9 @@
 #include "rosetta_doxygen/rosetta/parser.h"
 #include "rosetta_doxygen/rosetta/lua/types.h"
 
+using namespace rosetta_doxygen;
+using namespace rosetta_doxygen::rosetta;
+
 int main(int argc, char *argv[]) {
     if (argc < 2) {
         return 1;
@@ -81,9 +84,12 @@ int main(int argc, char *argv[]) {
     //
     // std::cout << rosetta_doxygen::converter::to_c_source(testClass);
 
-    std::vector<rosetta_doxygen::rosetta::lua::class_> classes = rosetta_doxygen::rosetta::parser::parse_yaml(inputPath);
+    lua::environment environment = parser::parse_yaml(inputPath);
 
-    std::cout << rosetta_doxygen::converter::to_c_source(classes);
+    std::cout << converter::to_c_source(environment.classes);
+    for (const lua::function &function: environment.functions) {
+        std::cout << converter::to_c_source(function) << '\n';
+    }
 
     return 0;
 }
